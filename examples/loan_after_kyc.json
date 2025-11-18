@@ -1,0 +1,31 @@
+{
+  "name": "loan_application_after_kyc",
+  "description": "Loan application that requires KYC verification workflow to complete first",
+  "category": "fintech",
+  "workflow_dependencies": ["kyc_verification"],
+  "guidelines": "This loan application requires KYC verification to be completed first. Check if the user has completed KYC verification before allowing them to proceed. If KYC is not complete, inform the user they must complete KYC verification first.",
+  "state_schema": {
+    "amount": {"type": "number", "minimum": 1000, "maximum": 1000000, "required": true},
+    "purpose": {"type": "string", "required": true},
+    "term_months": {"type": "integer", "minimum": 6, "maximum": 360, "required": true},
+    "full_name": {"type": "string", "required": true},
+    "date_of_birth": {"type": "string", "format": "date", "required": true},
+    "national_id": {"type": "string", "required": true},
+    "monthly_income": {"type": "number", "minimum": 0, "required": true},
+    "employment_status": {"type": "string", "enum": ["employed", "self_employed", "unemployed", "retired"], "required": true},
+    "credit_score": {"type": "integer", "minimum": 300, "maximum": 850},
+    "account_number": {"type": "string", "required": true},
+    "bank_name": {"type": "string", "required": true},
+    "routing_number": {"type": "string", "required": true}
+  },
+  "end_action_type": "api_call",
+  "end_action_target": "https://api.bank.com/loans/apply",
+  "is_active": true,
+  "workflow_metadata": {
+    "version": "1.0",
+    "estimated_duration_minutes": 10,
+    "requires_kyc": true,
+    "demonstrates": ["workflow_dependencies"]
+  }
+}
+

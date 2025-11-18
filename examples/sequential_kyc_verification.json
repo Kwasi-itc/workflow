@@ -1,0 +1,36 @@
+{
+  "name": "sequential_kyc_verification",
+  "description": "KYC verification process - compliance workflow",
+  "category": "compliance",
+  "guidelines": "Guide the customer through KYC verification. This is a compliance requirement. Be thorough and ensure all verification steps are completed. Explain why each verification is necessary.",
+  "state_schema": {
+    "customer_type": {"type": "string", "enum": ["individual", "business", "non_profit"], "required": true},
+    "id_type": {"type": "string", "enum": ["passport", "national_id", "drivers_license"], "required": true},
+    "id_number": {"type": "string", "required": true},
+    "id_verified": {"type": "boolean", "required": true},
+    "verification_date": {"type": "string", "format": "date"},
+    "street": {"type": "string", "required": true},
+    "city": {"type": "string", "required": true},
+    "state": {"type": "string", "required": true},
+    "postal_code": {"type": "string", "required": true},
+    "country": {"type": "string", "required": true},
+    "proof_of_address_uploaded": {"type": "boolean", "required": true},
+    "address_verified": {"type": "boolean", "required": true},
+    "selfie_uploaded": {"type": "boolean", "required": true},
+    "liveness_check_passed": {"type": "boolean", "required": true},
+    "biometric_verified": {"type": "boolean", "required": true},
+    "sanctions_check_passed": {"type": "boolean", "required": true},
+    "pep_check_passed": {"type": "boolean"},
+    "screening_date": {"type": "string", "format": "date"},
+    "verification_status": {"type": "string", "enum": ["pending", "in_review", "approved", "rejected", "requires_additional_info"], "required": true}
+  },
+  "end_action_type": "api_call",
+  "end_action_target": "https://api.bank.com/kyc/complete",
+  "is_active": true,
+  "workflow_metadata": {
+    "version": "1.0",
+    "estimated_duration_minutes": 10,
+    "regulatory_requirements": ["FATF", "Banking Regulations", "GDPR"],
+    "compliance_required": true
+  }
+}

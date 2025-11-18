@@ -1,0 +1,38 @@
+{
+  "name": "non_sequential_credit_card_application",
+  "description": "Credit card application form - fill fields in any order",
+  "category": "fintech",
+  "guidelines": "This is a form-style credit card application. Users can fill in sections in any order. Make it easy and flexible. Show progress indicators based on completed sections. Guide users to complete all required information.",
+  "state_schema": {
+    "card_type": {"type": "string", "enum": ["standard", "premium", "platinum", "business"], "required": true},
+    "full_name": {"type": "string", "required": true},
+    "date_of_birth": {"type": "string", "format": "date", "required": true},
+    "national_id": {"type": "string", "required": true},
+    "email": {"type": "string", "format": "email", "required": true},
+    "phone": {"type": "string", "required": true},
+    "street": {"type": "string", "required": true},
+    "city": {"type": "string", "required": true},
+    "state": {"type": "string", "required": true},
+    "postal_code": {"type": "string", "required": true},
+    "country": {"type": "string", "required": true},
+    "annual_income": {"type": "number", "minimum": 0, "required": true},
+    "employment_status": {"type": "string", "enum": ["employed", "self_employed", "unemployed", "retired", "student"], "required": true},
+    "employer_name": {"type": "string"},
+    "monthly_expenses": {"type": "number", "minimum": 0},
+    "credit_limit_preference": {"type": "number", "minimum": 1000},
+    "rewards_program": {"type": "string", "enum": ["cashback", "points", "miles", "none"]},
+    "paperless_statements": {"type": "boolean"},
+    "credit_check_authorized": {"type": "boolean", "required": true},
+    "terms_accepted": {"type": "boolean", "required": true},
+    "privacy_policy_accepted": {"type": "boolean", "required": true}
+  },
+  "end_action_type": "api_call",
+  "end_action_target": "https://api.bank.com/credit-cards/apply",
+  "is_active": true,
+  "workflow_metadata": {
+    "version": "1.0",
+    "estimated_duration_minutes": 8,
+    "form_style": true,
+    "instant_approval_available": true
+  }
+}
