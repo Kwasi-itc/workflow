@@ -36,22 +36,27 @@ def start_server():
     # Get port from environment variable (Render sets this)
     port = os.getenv("PORT", "8000")
     host = os.getenv("HOST", "0.0.0.0")
+    workers = os.getenv("WORKERS", "4")
     
     print(f"Server will start on {host}:{port}")
+    print(f"Workers: {workers}")
     print(f"API docs available at: http://{host}:{port}/docs\n")
+    
+    # Build uvicorn command
+    uvicorn_cmd = [
+        sys.executable, "-m", "uvicorn",
+        "app.main:app",
+        "--host", host,
+        "--port", str(port)
+    ]
+    
+    # Add workers if specified (only for production)
+    if workers and workers != "1":
+        uvicorn_cmd.extend(["--workers", str(workers)])
     
     # Start uvicorn
     try:
-        subprocess.run(
-            [
-                sys.executable, "-m", "uvicorn",
-                "app.main:app",
-                "--host", host,
-                "--port", str(port),
-                "--workers", os.getenv("WORKERS", "4")
-            ],
-            check=True
-        )
+        subprocess.run(uvicorn_cmd, check=True)
     except KeyboardInterrupt:
         print("\n\nServer stopped by user")
         sys.exit(0)
