@@ -90,6 +90,10 @@ class WorkflowDependencyService:
         """
         Check if all workflow-level dependencies are satisfied.
         
+        Note: This method currently only checks for workflow-to-workflow dependencies.
+        API dependencies (the new structure) are not checked here - they should be
+        checked by an API executor service that makes the actual HTTP calls.
+        
         Args:
             workflow: The workflow instance
             
@@ -104,10 +108,30 @@ class WorkflowDependencyService:
         if not workflow_deps:
             return {'satisfied': True, 'pending': []}
         
+        # Handle new dependency structure (list of objects with name, api, on_failure)
+        # For now, we skip API dependency checking here - that should be done by an API executor
+        # This method only checks for workflow-to-workflow dependencies if they exist
+        # in the on_failure handlers
+        
+        # If dependencies are API dependencies (new structure), we consider them satisfied
+        # for workflow-to-workflow dependency purposes, as they'll be checked separately
+        if workflow_deps and isinstance(workflow_deps[0], dict) and 'api' in workflow_deps[0]:
+            # New structure: API dependencies - these are checked by API executor, not here
+            # We only need to check if any on_failure handlers reference workflows
+            # For now, we'll return satisfied since API dependencies are handled elsewhere
+            return {'satisfied': True, 'pending': []}
+        
+        # Old structure: list of workflow names/IDs (backward compatibility)
         pending = []
         satisfied = True
         
-        for dep_name in workflow_deps:
+        for dep in workflow_deps:
+            # Extract dependency identifier
+            if isinstance(dep, dict):
+                dep_name = dep.get('name') or dep.get('workflow_name') or str(dep)
+            else:
+                dep_name = str(dep)
+            
             dep_info = self._check_workflow_dependency(workflow, dep_name)
             if not dep_info.get('satisfied', False):
                 satisfied = False
@@ -171,7 +195,6 @@ class WorkflowDependencyService:
         # If all dependencies satisfied, resume
         if workflow_deps.get('satisfied', True):
             workflow.status = 'active'
-            workflow.waiting_for = None
             workflow.pending_dependencies = {}
             self.db.commit()
             self.db.refresh(workflow)
@@ -192,29 +215,20 @@ class WorkflowDependencyService:
     def set_workflow_waiting(
         self,
         workflow: Workflow,
-        waiting_for: Dict[str, Any]
+        pending_dependencies: Dict[str, Any]
     ) -> Workflow:
         """
-        Set workflow status to 'waiting' with dependency info.
+        Set workflow status to 'waiting' and capture pending dependency data.
         
         Args:
             workflow: The workflow instance
-            waiting_for: Dict describing what the workflow is waiting for
+            pending_dependencies: Dict describing what remains pending
             
         Returns:
             Updated workflow
         """
         workflow.status = 'waiting'
-        workflow.waiting_for = waiting_for
-        
-        # Update pending_dependencies
-        pending = workflow.pending_dependencies or {}
-        if waiting_for.get('type') == 'workflow':
-            pending.setdefault('workflows', []).append(waiting_for)
-        elif waiting_for.get('type') == 'external':
-            pending.setdefault('external', []).append(waiting_for)
-        
-        workflow.pending_dependencies = pending
+        workflow.pending_dependencies = pending_dependencies or {}
         self.db.commit()
         self.db.refresh(workflow)
         

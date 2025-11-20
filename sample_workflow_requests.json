@@ -1,0 +1,121 @@
+[
+  {
+    "template_id": "e57a813e-9e87-47f6-8295-0b0c51f5abb0",
+    "conversation_id": "a1b2c3d4-e5f6-4789-a012-b3c4d5e6f789",
+    "user_id": "user-12345",
+    "state_data": {
+      "content_type": "article",
+      "title": "Getting Started with Workflow Automation",
+      "description": "A comprehensive guide to understanding workflow automation systems and their benefits for modern applications.",
+      "tags": "automation, workflows, tutorial",
+      "author_id": 1,
+      "publish_date": "2025-01-20"
+    },
+    "workflow_metadata": {
+      "source": "web_editor",
+      "priority": "normal"
+    }
+  },
+  {
+    "template_id": "e57a813e-9e87-47f6-8295-0b0c51f5abb0",
+    "conversation_id": "b2c3d4e5-f6a7-4890-b123-c4d5e6f7a890",
+    "user_id": "user-67890",
+    "state_data": {
+      "content_type": "video",
+      "title": "Introduction to API Design",
+      "description": "Learn the fundamentals of designing RESTful APIs that are scalable and maintainable.",
+      "tags": "api, design, rest",
+      "author_id": 2,
+      "publish_date": "2025-01-25"
+    },
+    "workflow_metadata": {
+      "source": "mobile_app",
+      "priority": "high"
+    }
+  },
+  {
+    "template_id": "bc072499-fe28-4fa2-9441-a3252fff4d78",
+    "conversation_id": "c3d4e5f6-a7b8-4901-c234-d5e6f7a8b901",
+    "user_id": "user-11111",
+    "state_data": {
+      "username": "johndoe",
+      "email": "john.doe@example.com",
+      "full_name": "John Doe",
+      "phone_number": "+1234567890",
+      "preferred_language": "en",
+      "newsletter_subscription": true,
+      "terms_accepted": true
+    },
+    "workflow_metadata": {
+      "registration_source": "website",
+      "marketing_campaign": "winter_2025"
+    }
+  },
+  {
+    "template_id": "bc072499-fe28-4fa2-9441-a3252fff4d78",
+    "conversation_id": "d4e5f6a7-b8c9-4012-d345-e6f7a8b9c012",
+    "user_id": "user-22222",
+    "state_data": {
+      "username": "janedoe",
+      "email": "jane.doe@example.com",
+      "full_name": "Jane Doe",
+      "phone_number": "+0987654321",
+      "preferred_language": "es",
+      "newsletter_subscription": false,
+      "terms_accepted": true
+    },
+    "workflow_metadata": {
+      "registration_source": "mobile_app",
+      "marketing_campaign": "referral_program"
+    }
+  },
+  {
+    "template_id": "82fc62ce-c215-4682-ba6b-17e1b6f113a3",
+    "conversation_id": "e5f6a7b8-c9d0-4123-e456-f7a8b9c0d123",
+    "user_id": "user-33333",
+    "state_data": {
+      "user_id": "user-33333",
+      "requested_amount": 500,
+      "tenor_months": 6,
+      "employment_status": "employed",
+      "monthly_income": 2000
+    },
+    "workflow_metadata": {
+      "application_channel": "mobile",
+      "referral_code": "REF123"
+    }
+  },
+  {
+    "template_id": "82fc62ce-c215-4682-ba6b-17e1b6f113a3",
+    "conversation_id": "f6a7b8c9-d0e1-4234-f567-a8b9c0d1e234",
+    "user_id": "user-44444",
+    "state_data": {
+      "user_id": "user-44444",
+      "requested_amount": 1200,
+      "tenor_months": 12,
+      "employment_status": "self_employed",
+      "monthly_income": 3500
+    },
+    "workflow_metadata": {
+      "application_channel": "web",
+      "referral_code": null
+    }
+  },
+  {
+    "template_id": "82fc62ce-c215-4682-ba6b-17e1b6f113a3",
+    "conversation_id": "a7b8c9d0-e1f2-4345-a678-b9c0d1e2f345",
+    "user_id": "user-55555",
+    "state_data": {
+      "user_id": "user-55555",
+      "requested_amount": 2500,
+      "tenor_months": 3,
+      "employment_status": "employed",
+      "monthly_income": 4500
+    },
+    "workflow_metadata": {
+      "application_channel": "branch",
+      "referral_code": "BRANCH001"
+    }
+  }
+]
+

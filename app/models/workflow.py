@@ -76,7 +76,6 @@ class Workflow(Base):
     
     # Dependency Tracking
     pending_dependencies = Column(JSON, nullable=True, default=dict)  # {workflow: [workflow_ids], external: [external_deps]}
-    waiting_for = Column(JSON, nullable=True)  # What the workflow is currently waiting for: {type: 'workflow'|'external', id: ..., condition: ...}
     
     # Execution Tracking
     started_at = Column(DateTime, server_default=func.now(), nullable=False)

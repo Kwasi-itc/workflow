@@ -259,8 +259,7 @@ GET /api/workflows?conversation_id=660e8400-e29b-41d4-a716-446655440000&status=a
     "purpose": "Home improvement",
     "full_name": "John Doe"
   },
-  "pending_dependencies": {},
-  "waiting_for": null
+  "pending_dependencies": {}
 }
 ```
 
@@ -269,31 +268,12 @@ GET /api/workflows?conversation_id=660e8400-e29b-41d4-a716-446655440000&status=a
 **Behavior:**
 - Automatically checks dependencies before allowing workflow to proceed
 - Sets workflow to 'waiting' if dependencies not satisfied
-- Automatically resumes workflow if it was waiting and dependencies are now satisfied
+- Automatically checks and resumes workflow if it was waiting and dependencies are now satisfied (when updating)
 - Sets `completed_at` timestamp when status changes to 'completed'
 
 **Errors:**
 - `404`: Workflow not found
 - `400`: Cannot proceed - workflow dependencies not satisfied
-
----
-
-### `POST /api/workflows/{workflow_id}/resume`
-**Description:** Resume a waiting workflow if dependencies are satisfied
-
-**Path Parameters:**
-- `workflow_id` (UUID): Workflow instance ID
-
-**Response:** `WorkflowResponse` (200 OK)
-
-**Behavior:**
-- Checks all dependencies
-- Resumes workflow to 'active' status if all dependencies satisfied
-- Returns error if dependencies still not satisfied
-
-**Errors:**
-- `404`: Workflow not found
-- `400`: Cannot resume - dependencies not satisfied
 
 ---
 
@@ -318,12 +298,17 @@ GET /api/workflows?conversation_id=660e8400-e29b-41d4-a716-446655440000&status=a
       }
     ]
   },
-  "waiting_for": {
-    "type": "workflow",
-    "dependencies": [...]
-  },
   "pending_dependencies": {
-    "workflows": [...]
+    "workflow_dependencies": {
+      "satisfied": false,
+      "pending": [
+        {
+          "type": "workflow",
+          "workflow_name": "kyc_verification",
+          "satisfied": false
+        }
+      ]
+    }
   }
 }
 ```
@@ -457,11 +442,6 @@ curl -X POST "http://127.0.0.1:8001/api/workflows" \
 ### Check Workflow Dependencies
 ```bash
 curl "http://127.0.0.1:8001/api/workflows/{workflow_id}/dependencies"
-```
-
-### Resume a Waiting Workflow
-```bash
-curl -X POST "http://127.0.0.1:8001/api/workflows/{workflow_id}/resume"
 ```
 
 ### Assign Permission

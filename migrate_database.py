@@ -51,6 +51,20 @@ def migrate_database():
         Base.metadata.create_all(bind=engine)
         print("[OK] Database migration complete!")
 
+        # Remove deprecated columns
+        inspector = inspect(engine)
+        if 'workflows' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('workflows')]
+            if 'waiting_for' in columns:
+                print("Removing deprecated 'waiting_for' column from workflows...")
+                drop_stmt = "ALTER TABLE workflows DROP COLUMN waiting_for"
+                try:
+                    conn.execute(text(drop_stmt))
+                    print("[OK] Removed waiting_for column")
+                except Exception as exc:
+                    print(f"[WARN] Failed to drop waiting_for column automatically: {exc}")
+                    print("       Please remove it manually if your database supports DROP COLUMN.")
+
 if __name__ == "__main__":
     print("Starting database migration...\n")
     migrate_database()

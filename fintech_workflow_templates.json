@@ -1,0 +1,784 @@
+[
+  {
+    "name": "payment_processing_workflow",
+    "description": "Complete payment processing workflow with account validation, KYC check, limit verification, and payment initiation",
+    "category": "fintech",
+    "guidelines": "Process a payment for a customer. First verify the account is active, check KYC approval status, verify transaction limits are available, then initiate the payment. Use checker endpoints to validate prerequisites before proceeding.",
+    "state_schema": {
+      "accountId": {"type": "string", "required": true},
+      "customerId": {"type": "string", "required": true},
+      "beneficiary": {"type": "string", "required": true},
+      "beneficiaryAccount": {"type": "string", "required": true},
+      "amount": {"type": "number", "minimum": 0.01, "required": true},
+      "currency": {"type": "string", "enum": ["GHS", "USD", "EUR", "NGN"], "required": true},
+      "method": {"type": "string", "enum": ["bank_transfer", "mobile_money", "card"], "required": true},
+      "reference": {"type": "string"},
+      "paymentId": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "account_active_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}/check-active",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      },
+      {
+        "name": "kyc_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/kyc/customers/{customerId}/check-approved",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_refresh_workflow_id",
+            "workflow_name": "kyc_refresh_workflow"
+          }
+        }
+      },
+      {
+        "name": "limit_available_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/limits/{accountId}/check-available",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": ["amount", "period"],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/limits/{accountId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/payments/initiate",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["accountId", "beneficiary", "beneficiaryAccount", "amount", "currency", "method", "reference"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Payment processing with full validation chain"
+    }
+  },
+  {
+    "name": "loan_application_workflow",
+    "description": "Complete loan application workflow with eligibility check, KYC verification, and loan approval",
+    "category": "fintech",
+    "guidelines": "Process a loan application. Collect loan details, verify eligibility (credit score >= 650), check KYC approval, then submit for approval. Use checker endpoints to validate prerequisites.",
+    "state_schema": {
+      "customerId": {"type": "string", "required": true},
+      "accountId": {"type": "string", "required": true},
+      "amount": {"type": "number", "minimum": 100, "required": true},
+      "purpose": {"type": "string", "required": true},
+      "tenure": {"type": "integer", "minimum": 1, "maximum": 60, "required": true},
+      "collateral": {"type": "string"},
+      "loanId": {"type": "string"},
+      "creditScore": {"type": "number"},
+      "eligible": {"type": "boolean"},
+      "status": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "kyc_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/kyc/customers/{customerId}/check-approved",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_refresh_workflow_id",
+            "workflow_name": "kyc_refresh_workflow"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/loans/apply",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["customerId", "accountId", "amount", "purpose", "tenure", "collateral"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 10,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Loan application with eligibility and KYC validation"
+    }
+  },
+  {
+    "name": "loan_approval_workflow",
+    "description": "Loan approval workflow that checks eligibility and approval status before approving a loan",
+    "category": "fintech",
+    "guidelines": "Approve a loan application. First check if the loan is eligible (credit score >= 650), verify it hasn't been approved yet, then approve and disburse the loan.",
+    "state_schema": {
+      "loanId": {"type": "string", "required": true},
+      "customerId": {"type": "string", "required": true},
+      "approved": {"type": "boolean"},
+      "status": {"type": "string"},
+      "approvedAt": {"type": "string"},
+      "disbursedAt": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "loan_eligible_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}/check-eligible",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}/reject",
+            "method": "POST",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": ["reason"],
+            "timeout_seconds": 20
+          }
+        }
+      },
+      {
+        "name": "loan_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}/check-approved",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "loan_rejection_workflow_id",
+            "workflow_name": "loan_rejection_workflow"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}/approve",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": null,
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 3,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Loan approval with eligibility verification"
+    }
+  },
+  {
+    "name": "airtime_purchase_workflow",
+    "description": "Airtime purchase workflow that lists providers, purchases airtime, and verifies completion",
+    "category": "fintech",
+    "guidelines": "Purchase airtime for a phone number. First get available providers, then purchase airtime, and verify the purchase is completed before confirming to the user.",
+    "state_schema": {
+      "phoneNumber": {"type": "string", "required": true},
+      "amount": {"type": "number", "minimum": 1, "required": true},
+      "provider": {"type": "string", "enum": ["MTN", "Vodafone", "Airtel", "Tigo", "Orange"], "required": true},
+      "currency": {"type": "string", "enum": ["GHS", "USD", "NGN"], "required": true},
+      "accountId": {"type": "string", "required": true},
+      "purchaseId": {"type": "string"},
+      "status": {"type": "string"},
+      "deliveryStatus": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "account_active_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}/check-active",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/airtime/purchase",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["phoneNumber", "amount", "provider", "currency", "accountId"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Airtime purchase with account validation"
+    }
+  },
+  {
+    "name": "airtime_completion_check_workflow",
+    "description": "Workflow to check if airtime purchase has been completed and delivered",
+    "category": "fintech",
+    "guidelines": "Check if an airtime purchase has been completed. Poll the completion status until the purchase is delivered, then confirm to the user.",
+    "state_schema": {
+      "purchaseId": {"type": "string", "required": true},
+      "phoneNumber": {"type": "string"},
+      "status": {"type": "string"},
+      "deliveryStatus": {"type": "string"},
+      "completed": {"type": "boolean"},
+      "completedAt": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "airtime_completed_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/airtime/purchases/{purchaseId}/check-completed",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/airtime/purchases/{purchaseId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/airtime/purchases/{purchaseId}",
+      "method": "GET",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": null,
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 3,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Airtime completion verification workflow"
+    }
+  },
+  {
+    "name": "account_creation_with_kyc_workflow",
+    "description": "Account creation workflow that creates an account and verifies KYC status",
+    "category": "fintech",
+    "guidelines": "Create a new account for a customer. After account creation, check KYC status. If KYC is not approved, guide the user to refresh their KYC information.",
+    "state_schema": {
+      "customerId": {"type": "string", "required": true},
+      "type": {"type": "string", "enum": ["savings", "current"], "required": true},
+      "currency": {"type": "string", "enum": ["GHS", "USD", "EUR", "NGN"], "required": true},
+      "initialDeposit": {"type": "number", "minimum": 0},
+      "kycLevel": {"type": "string", "enum": ["tier1", "tier2", "tier3"]},
+      "accountId": {"type": "string"},
+      "accountNumber": {"type": "string"},
+      "kycStatus": {"type": "string"},
+      "kycApproved": {"type": "boolean"}
+    },
+    "workflow_dependencies": [],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/accounts",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["customerId", "type", "currency", "initialDeposit", "kycLevel"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Account creation with KYC status check"
+    }
+  },
+  {
+    "name": "kyc_refresh_workflow",
+    "description": "KYC refresh workflow that updates KYC documents and verifies approval",
+    "category": "fintech",
+    "guidelines": "Refresh KYC information for a customer. Collect updated documents and KYC level, submit for refresh, then verify the KYC is approved.",
+    "state_schema": {
+      "customerId": {"type": "string", "required": true},
+      "documents": {"type": "array", "items": {"type": "string"}, "required": true},
+      "level": {"type": "string", "enum": ["tier1", "tier2", "tier3"]},
+      "status": {"type": "string"},
+      "approved": {"type": "boolean"},
+      "riskRating": {"type": "string"}
+    },
+    "workflow_dependencies": [],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/kyc/customers/{customerId}/refresh",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["documents", "level"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 3,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "KYC refresh and verification workflow"
+    }
+  },
+  {
+    "name": "transaction_transfer_workflow",
+    "description": "Transaction/transfer workflow that creates a transfer between accounts and verifies it's cleared",
+    "category": "fintech",
+    "guidelines": "Transfer funds between accounts. Create the transaction, then verify both accounts are active, and check that the transaction has been cleared before confirming to the user.",
+    "state_schema": {
+      "fromAccount": {"type": "string", "required": true},
+      "toAccount": {"type": "string", "required": true},
+      "amount": {"type": "number", "minimum": 0.01, "required": true},
+      "currency": {"type": "string", "enum": ["GHS", "USD", "EUR", "NGN"], "required": true},
+      "purpose": {"type": "string"},
+      "debitTransactionId": {"type": "string"},
+      "creditTransactionId": {"type": "string"},
+      "status": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "from_account_active_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{fromAccount}/check-active",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/accounts/{fromAccount}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      },
+      {
+        "name": "to_account_active_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{toAccount}/check-active",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/accounts/{toAccount}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/transactions",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["fromAccount", "toAccount", "amount", "currency", "purpose"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Transaction transfer with account validation"
+    }
+  },
+  {
+    "name": "transaction_cleared_check_workflow",
+    "description": "Workflow to verify that a transaction has been cleared",
+    "category": "fintech",
+    "guidelines": "Check if a transaction has been cleared. Poll the transaction status until it's cleared, then confirm to the user.",
+    "state_schema": {
+      "txnId": {"type": "string", "required": true},
+      "accountId": {"type": "string"},
+      "amount": {"type": "number"},
+      "status": {"type": "string"},
+      "cleared": {"type": "boolean"},
+      "processedAt": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "transaction_cleared_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/transactions/{txnId}/check-cleared",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/transactions/{txnId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/transactions/{txnId}",
+      "method": "GET",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": null,
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 3,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Transaction cleared verification workflow"
+    }
+  },
+  {
+    "name": "payment_ready_check_workflow",
+    "description": "Workflow to verify that a payment is ready to process (KYC complete, sufficient balance, pending status)",
+    "category": "fintech",
+    "guidelines": "Check if a payment is ready to process. Verify KYC is complete, balance is sufficient, and payment is in pending status before proceeding with processing.",
+    "state_schema": {
+      "paymentId": {"type": "string", "required": true},
+      "accountId": {"type": "string"},
+      "amount": {"type": "number"},
+      "status": {"type": "string"},
+      "ready": {"type": "boolean"},
+      "kycComplete": {"type": "boolean"},
+      "sufficientBalance": {"type": "boolean"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "payment_ready_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}/check-ready",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}",
+      "method": "GET",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": null,
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 2,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Payment readiness verification workflow"
+    }
+  },
+  {
+    "name": "account_limit_update_workflow",
+    "description": "Workflow to update account transaction limits",
+    "category": "fintech",
+    "guidelines": "Update account transaction limits. Collect the new daily and monthly limits, then update the account limits.",
+    "state_schema": {
+      "accountId": {"type": "string", "required": true},
+      "dailyLimit": {"type": "number", "minimum": 0},
+      "monthlyLimit": {"type": "number", "minimum": 0},
+      "currency": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "account_existence_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "account_creation_workflow_id",
+            "workflow_name": "account_creation_with_kyc_workflow"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/limits/{accountId}/update",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["dailyLimit", "monthlyLimit"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 3,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Account limit update workflow"
+    }
+  },
+  {
+    "name": "account_status_update_workflow",
+    "description": "Workflow to update account status (active, suspended, closed)",
+    "category": "fintech",
+    "guidelines": "Update the status of an account. Collect the new status (active, suspended, or closed) and update the account accordingly.",
+    "state_schema": {
+      "accountId": {"type": "string", "required": true},
+      "status": {"type": "string", "enum": ["active", "suspended", "closed"], "required": true},
+      "accountNumber": {"type": "string"},
+      "updatedAt": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "account_existence_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "account_creation_workflow_id",
+            "workflow_name": "account_creation_with_kyc_workflow"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/accounts/{accountId}/status",
+      "method": "PATCH",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["status"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 2,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Account status update workflow"
+    }
+  },
+  {
+    "name": "payment_cancellation_workflow",
+    "description": "Workflow to cancel a pending payment",
+    "category": "fintech",
+    "guidelines": "Cancel a pending payment. Verify the payment exists and is in pending status, then cancel it. Note that completed payments cannot be cancelled.",
+    "state_schema": {
+      "paymentId": {"type": "string", "required": true},
+      "accountId": {"type": "string"},
+      "status": {"type": "string"},
+      "cancelled": {"type": "boolean"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "payment_status_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}",
+            "method": "GET",
+            "headers": ["Content-Type"],
+            "query_params": [],
+            "body": null,
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/payments/{paymentId}/cancel",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": null,
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 2,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Payment cancellation workflow"
+    }
+  },
+  {
+    "name": "loan_rejection_workflow",
+    "description": "Workflow to reject a loan application with a reason",
+    "category": "fintech",
+    "guidelines": "Reject a loan application. Collect the rejection reason and submit the rejection. This is typically used when eligibility checks fail.",
+    "state_schema": {
+      "loanId": {"type": "string", "required": true},
+      "reason": {"type": "string", "required": true},
+      "status": {"type": "string"},
+      "rejectionReason": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "loan_status_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}",
+          "method": "GET",
+          "headers": ["Content-Type"],
+          "query_params": [],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "loan_application_workflow_id",
+            "workflow_name": "loan_application_workflow"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/loans/{loanId}/reject",
+      "method": "POST",
+      "headers": ["Content-Type"],
+      "query_params": [],
+      "body": ["reason"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 2,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Loan rejection workflow"
+    }
+  }
+]
+

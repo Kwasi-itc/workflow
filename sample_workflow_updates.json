@@ -1,0 +1,185 @@
+[
+  {
+    "status": "completed",
+    "state_data": {
+      "content_type": "article",
+      "title": "Getting Started with Workflow Automation",
+      "description": "A comprehensive guide to understanding workflow automation systems and their benefits for modern applications.",
+      "tags": "automation, workflows, tutorial",
+      "author_id": 1,
+      "publish_date": "2025-01-20"
+    },
+    "end_action_result": {
+      "status": 201,
+      "message": "Content published successfully",
+      "content_id": "art-12345"
+    },
+    "workflow_metadata": {
+      "source": "web_editor",
+      "priority": "normal",
+      "published_at": "2025-01-20T10:30:00Z"
+    }
+  },
+  {
+    "status": "cancelled",
+    "state_data": {},
+    "pending_dependencies": {},
+    "end_action_result": {},
+    "workflow_metadata": {
+      "cancellation_reason": "User requested cancellation",
+      "cancelled_by": "user-67890"
+    }
+  },
+  {
+    "status": "active",
+    "state_data": {
+      "username": "johndoe",
+      "email": "john.doe@example.com",
+      "full_name": "John Doe",
+      "phone_number": "+1234567890",
+      "preferred_language": "en",
+      "newsletter_subscription": true,
+      "terms_accepted": true,
+      "verification_code": "ABC123"
+    },
+    "workflow_metadata": {
+      "registration_source": "website",
+      "marketing_campaign": "winter_2025",
+      "step": "email_verification"
+    }
+  },
+  {
+    "status": "waiting",
+    "state_data": {
+      "user_id": "user-33333",
+      "requested_amount": 500,
+      "tenor_months": 6,
+      "employment_status": "employed",
+      "monthly_income": 2000
+    },
+    "pending_dependencies": {
+      "kyc_status_check": {
+        "status": "pending",
+        "last_checked": "2025-01-19T14:20:00Z"
+      },
+      "affordability_signal_check": {
+        "status": "pending",
+        "last_checked": "2025-01-19T14:20:00Z"
+      }
+    },
+    "workflow_metadata": {
+      "application_channel": "mobile",
+      "referral_code": "REF123",
+      "waiting_reason": "Dependencies not satisfied"
+    }
+  },
+  {
+    "status": "completed",
+    "state_data": {
+      "user_id": "user-44444",
+      "requested_amount": 1200,
+      "tenor_months": 12,
+      "employment_status": "self_employed",
+      "monthly_income": 3500,
+      "preapproval_code": "PRE-APP-78901"
+    },
+    "pending_dependencies": {},
+    "end_action_result": {
+      "status": 200,
+      "message": "Pre-approval granted",
+      "preapproval_code": "PRE-APP-78901",
+      "valid_until": "2025-02-19T00:00:00Z"
+    },
+    "workflow_metadata": {
+      "application_channel": "web",
+      "referral_code": null,
+      "approved_at": "2025-01-19T15:45:00Z"
+    }
+  },
+  {
+    "status": "failed",
+    "state_data": {
+      "username": "janedoe",
+      "email": "jane.doe@example.com",
+      "full_name": "Jane Doe",
+      "phone_number": "+0987654321",
+      "preferred_language": "es",
+      "newsletter_subscription": false,
+      "terms_accepted": true
+    },
+    "end_action_result": {
+      "status": 400,
+      "error": "Email already exists",
+      "message": "User with email jane.doe@example.com already registered"
+    },
+    "workflow_metadata": {
+      "registration_source": "mobile_app",
+      "marketing_campaign": "referral_program",
+      "failure_reason": "Duplicate email"
+    }
+  },
+  {
+    "status": "active",
+    "state_data": {
+      "content_type": "video",
+      "title": "Introduction to API Design",
+      "description": "Learn the fundamentals of designing RESTful APIs that are scalable and maintainable.",
+      "tags": "api, design, rest",
+      "author_id": 2,
+      "publish_date": "2025-01-25",
+      "thumbnail_url": "https://example.com/thumbnails/video-123.jpg"
+    },
+    "workflow_metadata": {
+      "source": "mobile_app",
+      "priority": "high",
+      "review_status": "pending_approval"
+    }
+  },
+  {
+    "status": "completed",
+    "state_data": {
+      "user_id": "user-55555",
+      "requested_amount": 2500,
+      "tenor_months": 3,
+      "employment_status": "employed",
+      "monthly_income": 4500,
+      "preapproval_code": "PRE-APP-45678"
+    },
+    "pending_dependencies": {},
+    "end_action_result": {
+      "status": 201,
+      "message": "Pre-approval created and notification sent",
+      "preapproval_code": "PRE-APP-45678",
+      "notification_sent": true
+    },
+    "workflow_metadata": {
+      "application_channel": "branch",
+      "referral_code": "BRANCH001",
+      "completed_at": "2025-01-19T16:30:00Z",
+      "processed_by": "agent-001"
+    }
+  },
+  {
+    "status": "cancelled",
+    "workflow_metadata": {
+      "cancellation_reason": "Timeout - user did not respond",
+      "cancelled_at": "2025-01-19T17:00:00Z"
+    }
+  },
+  {
+    "state_data": {
+      "content_type": "article",
+      "title": "Getting Started with Workflow Automation - Updated",
+      "description": "A comprehensive guide to understanding workflow automation systems and their benefits for modern applications. Updated with latest best practices.",
+      "tags": "automation, workflows, tutorial, updated",
+      "author_id": 1,
+      "publish_date": "2025-01-21"
+    },
+    "workflow_metadata": {
+      "source": "web_editor",
+      "priority": "normal",
+      "last_updated": "2025-01-20T11:00:00Z"
+    }
+  }
+]
+

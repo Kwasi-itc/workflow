@@ -276,5 +276,286 @@
       "estimated_duration_minutes": 7,
       "note": "ReqRes returns user data. JSONPlaceholder returns post objects. HTTPBin echoes request data."
     }
+  },
+  {
+    "name": "micro_loan_preapproval",
+    "description": "Pre-qualifies users for micro-loans after verifying KYC and affordability signals.",
+    "category": "fintech",
+    "guidelines": "Collect borrower profile data, confirm KYC is complete, and ensure affordability API returns positive signals before issuing pre-approval.",
+    "state_schema": {
+      "user_id": {"type": "string", "required": true},
+      "requested_amount": {"type": "number", "minimum": 50, "maximum": 5000, "required": true},
+      "tenor_months": {"type": "integer", "minimum": 1, "maximum": 12, "required": true},
+      "employment_status": {"type": "string", "enum": ["employed", "self_employed", "unemployed"], "required": true},
+      "monthly_income": {"type": "number", "required": true},
+      "preapproval_code": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "kyc_status_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/todos/1",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["user_id"],
+          "body": null,
+          "timeout_seconds": 25
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_workflow_id",
+            "workflow_name": "kyc_verification"
+          }
+        }
+      },
+      {
+        "name": "affordability_signal_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/posts/12",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["user_id"],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://httpbin.org/post",
+            "method": "POST",
+            "headers": ["Authorization", "Content-Type"],
+            "query_params": ["user_id"],
+            "body": ["user_id", "requested_amount", "reason"],
+            "timeout_seconds": 20
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://httpbin.org/post",
+      "method": "POST",
+      "headers": ["Authorization", "Content-Type"],
+      "query_params": ["user_id"],
+      "body": ["user_id", "requested_amount", "tenor_months", "preapproval_code"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "currency": "USD",
+      "segment": "micro_lending"
+    }
+  },
+  {
+    "name": "digital_wallet_topup",
+    "description": "Allows users to top up wallet balance after verifying funding source and fraud checks.",
+    "category": "fintech",
+    "guidelines": "Collect funding source details, verify funding account ownership, ensure fraud screening passes, then initiate wallet credit.",
+    "state_schema": {
+      "user_id": {"type": "string", "required": true},
+      "funding_account_id": {"type": "string", "required": true},
+      "topup_amount": {"type": "number", "minimum": 1, "required": true},
+      "currency": {"type": "string", "enum": ["USD", "EUR", "GHS", "NGN"], "required": true},
+      "otp_verified": {"type": "boolean", "required": true},
+      "wallet_balance_preview": {"type": "number"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "funding_account_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/users/3",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["funding_account_id"],
+          "body": null,
+          "timeout_seconds": 20
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://httpbin.org/put",
+            "method": "PUT",
+            "headers": ["Authorization"],
+            "query_params": ["funding_account_id"],
+            "body": ["funding_account_id"]
+          }
+        }
+      },
+      {
+        "name": "fraud_screening_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/comments/25",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["user_id"],
+          "body": null,
+          "timeout_seconds": 20
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "fraud_review_workflow_id",
+            "workflow_name": "fraud_secondary_review"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://httpbin.org/post",
+      "method": "POST",
+      "headers": ["Authorization", "Content-Type"],
+      "query_params": ["user_id"],
+      "body": ["user_id", "topup_amount", "currency", "funding_account_id"],
+      "timeout_seconds": 25
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "2.3",
+      "channel": "mobile_app",
+      "sla_minutes": 2
+    }
+  },
+  {
+    "name": "utility_bill_payment",
+    "description": "Handles recurring utility payments with dependency on billing profile validation and balance checks.",
+    "category": "fintech",
+    "guidelines": "Confirm customer billing profile exists, ensure wallet balance covers invoice, then call utility API to mark bill paid.",
+    "state_schema": {
+      "user_id": {"type": "string", "required": true},
+      "utility_account_number": {"type": "string", "required": true},
+      "bill_reference": {"type": "string", "required": true},
+      "bill_amount": {"type": "number", "required": true},
+      "payment_method": {"type": "string", "enum": ["wallet", "card"], "required": true},
+      "receipt_number": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "billing_profile_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/users/6",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["utility_account_number"],
+          "body": null,
+          "timeout_seconds": 30
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://httpbin.org/post",
+            "method": "POST",
+            "headers": ["Authorization", "Content-Type"],
+            "query_params": ["utility_account_number"],
+            "body": ["utility_account_number", "bill_reference", "error_message"]
+          }
+        }
+      },
+      {
+        "name": "wallet_balance_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/posts/30",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["user_id"],
+          "body": null,
+          "timeout_seconds": 25
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "wallet_topup_workflow_id",
+            "workflow_name": "wallet_balance_recovery"
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://httpbin.org/put",
+      "method": "PUT",
+      "headers": ["Authorization", "Content-Type"],
+      "query_params": ["utility_account_number"],
+      "body": ["bill_reference", "bill_amount", "payment_method"],
+      "timeout_seconds": 35
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.2",
+      "utility_partner": "CityPower",
+      "auto_retries": 1
+    }
+  },
+  {
+    "name": "merchant_payout_release",
+    "description": "Releases daily merchant earnings after verifying settlement balance and fraud signals.",
+    "category": "fintech",
+    "guidelines": "Confirm merchant identity, ensure available balance exceeds payout threshold, then call payout API to send funds.",
+    "state_schema": {
+      "merchant_id": {"type": "string", "required": true},
+      "payout_amount": {"type": "number", "required": true},
+      "currency": {"type": "string", "enum": ["USD", "EUR", "GHS", "NGN"], "required": true},
+      "preferred_bank_account": {"type": "string", "required": true},
+      "settlement_window": {"type": "string", "required": true},
+      "payout_reference": {"type": "string"}
+    },
+    "workflow_dependencies": [
+      {
+        "name": "merchant_identity_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/users/8",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["merchant_id"],
+          "body": null,
+          "timeout_seconds": 25
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "merchant_review_workflow_id",
+            "workflow_name": "merchant_identity_review"
+          }
+        }
+      },
+      {
+        "name": "settlement_balance_check",
+        "api": {
+          "endpoint": "https://jsonplaceholder.typicode.com/posts/18",
+          "method": "GET",
+          "headers": ["Authorization"],
+          "query_params": ["merchant_id"],
+          "body": null,
+          "timeout_seconds": 25
+        },
+        "on_failure": {
+          "action_type": "api_call",
+          "action_target": {
+            "endpoint": "https://httpbin.org/post",
+            "method": "POST",
+            "headers": ["Authorization", "Content-Type"],
+            "query_params": ["merchant_id"],
+            "body": ["merchant_id", "payout_amount", "reason"]
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://httpbin.org/post",
+      "method": "POST",
+      "headers": ["Authorization", "Content-Type"],
+      "query_params": ["merchant_id"],
+      "body": ["merchant_id", "payout_amount", "currency", "preferred_bank_account", "payout_reference"],
+      "timeout_seconds": 30
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "payout_threshold": 100,
+      "sla_hours": 6
+    }
   }
 ]

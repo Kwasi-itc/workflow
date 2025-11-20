@@ -8,14 +8,14 @@ from datetime import datetime
 class ApiConfig(BaseModel):
     """Schema for API configuration in workflow dependencies."""
     endpoint: str = Field(..., description="Full URL to check dependency status")
-    method: Literal["GET"] = Field(..., description="HTTP method (only GET allowed for dependencies)")
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = Field(..., description="HTTP method (supports all methods for checker endpoints)")
     headers: Optional[List[str]] = Field(None, description="Array of header names as strings")
     query_params: Optional[List[str]] = Field(None, description="Array of query parameter names as strings")
     body: Optional[Union[List[str], None]] = Field(None, description="Array of body keys as strings (should be null for GET requests)")
     timeout_seconds: Optional[int] = Field(30, description="Request timeout in seconds", ge=1, le=300)
     
     @model_validator(mode='after')
-    def validate_body_for_get(self):
+    def validate_body_for_method(self):
         """Validate that body is null for GET requests."""
         if self.method == 'GET' and self.body is not None and len(self.body) > 0:
             raise ValueError("Body must be null or empty for GET requests")
@@ -28,9 +28,14 @@ class OnFailureWorkflowTarget(BaseModel):
     workflow_name: Optional[str] = Field(None, description="Name of workflow (for reference)")
 
 
-class OnFailureApiCallTarget(ApiConfig):
-    """Schema for api_call action_target in on_failure (same as ApiConfig)."""
-    pass
+class OnFailureApiCallTarget(BaseModel):
+    """Schema for api_call action_target in on_failure (supports all HTTP methods)."""
+    endpoint: str = Field(..., description="Full URL for the failure handler API call")
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = Field(..., description="HTTP method")
+    headers: Optional[List[str]] = Field(None, description="Array of header names as strings")
+    query_params: Optional[List[str]] = Field(None, description="Array of query parameter names as strings")
+    body: Optional[List[str]] = Field(None, description="Array of body keys as strings")
+    timeout_seconds: Optional[int] = Field(30, description="Request timeout in seconds", ge=1, le=300)
 
 
 class EndActionApiConfig(BaseModel):
@@ -215,7 +220,6 @@ class WorkflowUpdate(BaseModel):
     status: Optional[str] = Field(None, pattern="^(active|completed|cancelled|failed|waiting)$")
     state_data: Optional[Dict[str, Any]] = None
     pending_dependencies: Optional[Dict[str, Any]] = None
-    waiting_for: Optional[Dict[str, Any]] = None
     end_action_result: Optional[Dict[str, Any]] = None
     workflow_metadata: Optional[Dict[str, Any]] = None
 
@@ -225,7 +229,6 @@ class WorkflowResponse(WorkflowBase):
     id: UUID
     status: str
     pending_dependencies: Optional[Dict[str, Any]] = None
-    waiting_for: Optional[Dict[str, Any]] = None
     started_at: datetime
     completed_at: Optional[datetime] = None
     last_interaction_at: datetime

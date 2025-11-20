@@ -292,6 +292,119 @@ async def delete_workflow_template(
         )
 
 
+@router.post("/bulk", status_code=201)
+async def create_workflow_templates_bulk(
+    templates: List[WorkflowTemplateCreate],
+    skip_duplicates: bool = Query(False, description="Skip templates with duplicate names instead of failing"),
+    db: Session = Depends(get_db)
+):
+    """
+    Create multiple workflow templates in a single request.
+    
+    Accepts an array of workflow templates and creates them all. Useful for bulk imports.
+    
+    - If `skip_duplicates=true`, templates with existing names will be skipped
+    - If `skip_duplicates=false` (default), the entire operation fails if any template name already exists
+    
+    Returns a summary with created templates, skipped templates (if any), and errors (if any).
+    """
+    registry = WorkflowRegistry(db)
+    
+    created_templates = []
+    skipped_templates = []
+    errors = []
+    
+    for idx, template in enumerate(templates):
+        try:
+            # Check if template name already exists
+            existing = registry.get_template_by_name(template.name)
+            if existing:
+                if skip_duplicates:
+                    skipped_templates.append({
+                        "index": idx,
+                        "name": template.name,
+                        "reason": "Template name already exists",
+                        "existing_template_id": str(existing.id)
+                    })
+                    continue
+                else:
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "error": "Template name already exists",
+                            "message": f"Workflow template with name '{template.name}' already exists at index {idx}",
+                            "template_name": template.name,
+                            "index": idx,
+                            "existing_template_id": str(existing.id),
+                            "suggestion": "Set skip_duplicates=true to skip duplicates"
+                        }
+                    )
+            
+            # Create the template
+            created_template = registry.register_template(template)
+            created_templates.append(WorkflowTemplateResponse.model_validate(created_template))
+            
+        except HTTPException:
+            raise
+        except ValueError as e:
+            errors.append({
+                "index": idx,
+                "name": template.name if hasattr(template, 'name') else f"template_{idx}",
+                "error": "Validation failed",
+                "message": str(e)
+            })
+        except Exception as e:
+            errors.append({
+                "index": idx,
+                "name": template.name if hasattr(template, 'name') else f"template_{idx}",
+                "error": "Internal server error",
+                "message": f"Failed to create workflow template: {str(e)}"
+            })
+    
+    # If there are errors and we're not skipping duplicates, fail the entire operation
+    if errors and not skip_duplicates:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Bulk creation failed",
+                "message": f"Failed to create {len(errors)} template(s)",
+                "errors": errors,
+                "created_count": len(created_templates),
+                "total_count": len(templates)
+            }
+        )
+    
+    # Return results with summary
+    response_data = {
+        "created": created_templates,
+        "summary": {
+            "total": len(templates),
+            "created": len(created_templates),
+            "skipped": len(skipped_templates),
+            "errors": len(errors)
+        }
+    }
+    
+    if skipped_templates:
+        response_data["skipped"] = skipped_templates
+    
+    if errors:
+        response_data["errors"] = errors
+    
+    # If nothing was created, return 400 with details
+    if not created_templates:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "No templates created",
+                "message": "All templates were skipped or failed",
+                **response_data
+            }
+        )
+    
+    return response_data
+
+
 @router.get("/user-type/{user_type_id}", response_model=List[WorkflowTemplateResponse])
 async def get_templates_for_user_type(
     user_type_id: UUID,

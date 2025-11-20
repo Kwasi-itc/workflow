@@ -94,11 +94,10 @@ async def create_workflow(
         
         # If workflow dependencies not satisfied, set to waiting
         if not workflow_deps.get('satisfied', True):
-            waiting_for = {
-                'type': 'workflow',
-                'dependencies': workflow_deps.get('pending', [])
+            pending_info = {
+                'workflow_dependencies': workflow_deps
             }
-            dep_service.set_workflow_waiting(workflow_instance, waiting_for)
+            dep_service.set_workflow_waiting(workflow_instance, pending_info)
             db.commit()
             db.refresh(workflow_instance)
             # Access template relationship to trigger lazy load
@@ -278,11 +277,10 @@ async def update_workflow(
             can_proceed = dep_service.can_proceed(workflow_instance)
             if not can_proceed.get('can_proceed', False):
                 # Set workflow to waiting if dependencies not satisfied
-                waiting_for = {
-                    'type': 'workflow',
-                    'dependencies': can_proceed.get('workflow_dependencies', {}).get('pending', [])
+                pending_info = {
+                    'workflow_dependencies': can_proceed.get('workflow_dependencies', {})
                 }
-                dep_service.set_workflow_waiting(workflow_instance, waiting_for)
+                dep_service.set_workflow_waiting(workflow_instance, pending_info)
                 db.commit()
                 db.refresh(workflow_instance)
                 _ = workflow_instance.template
@@ -292,7 +290,7 @@ async def update_workflow(
                     detail={
                         "error": "Dependencies not satisfied",
                         "message": "Cannot proceed: workflow dependencies not satisfied",
-                        "waiting_for": waiting_for,
+                        "pending_dependencies": pending_info,
                         "dependencies": can_proceed,
                         "workflow_id": str(workflow_id)
                     }
@@ -327,38 +325,6 @@ async def update_workflow(
                 "message": "Failed to update workflow instance"
             }
         )
-
-
-@router.post("/{workflow_id}/resume", response_model=WorkflowResponse)
-async def resume_workflow(
-    workflow_id: UUID,
-    db: Session = Depends(get_db)
-):
-    """Resume a waiting workflow if dependencies are satisfied."""
-    workflow = db.query(Workflow).filter(Workflow.id == str(workflow_id)).first()
-    
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    
-    db.refresh(workflow, ['template'])
-    
-    dep_service = WorkflowDependencyService(db)
-    result = dep_service.resume_workflow_if_ready(workflow)
-    
-    if not result.get('resumed'):
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Cannot resume workflow: dependencies not satisfied",
-                "reason": result.get('reason'),
-                "dependencies": {
-                    "workflow": result.get('workflow_dependencies')
-                }
-            }
-        )
-    
-    db.refresh(workflow, ['template'])
-    return workflow
 
 
 @router.get("/{workflow_id}/dependencies", response_model=Dict)
@@ -397,7 +363,6 @@ async def check_workflow_dependencies(
             "workflow_name": workflow.template.name if workflow.template else None,
             "status": workflow.status,
             "workflow_dependencies": workflow_deps,
-            "waiting_for": workflow.waiting_for,
             "pending_dependencies": workflow.pending_dependencies,
             "can_proceed": workflow_deps.get('satisfied', False)
         }
