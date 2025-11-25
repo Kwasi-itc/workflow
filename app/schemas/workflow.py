@@ -66,7 +66,33 @@ class WorkflowDependency(BaseModel):
     """Schema for a single workflow dependency."""
     name: str = Field(..., description="Name of the dependency")
     api: ApiConfig = Field(..., description="API configuration to check dependency")
-    on_failure: OnFailure = Field(..., description="Failure handler configuration")
+    on_failure: Optional[OnFailure] = Field(None, description="Failure handler configuration (optional for legacy compatibility)")
+    
+    @model_validator(mode='before')
+    @classmethod
+    def handle_legacy_on_failure(cls, data: Any):
+        """Handle legacy on_failure formats (API calls) by converting to None."""
+        if isinstance(data, dict):
+            on_failure_data = data.get('on_failure')
+            if isinstance(on_failure_data, dict):
+                # Check if it's legacy format (has 'endpoint' directly or missing 'action_target' with 'workflow_id')
+                action_target = on_failure_data.get('action_target', {})
+                if isinstance(action_target, dict):
+                    # If action_target has 'endpoint', it's legacy API call format
+                    if 'endpoint' in action_target:
+                        # Legacy format - set to None
+                        data['on_failure'] = None
+                    # If action_target doesn't have 'workflow_id', it's invalid
+                    elif 'workflow_id' not in action_target and on_failure_data.get('action_type') == 'workflow':
+                        # Missing workflow_id - set to None
+                        data['on_failure'] = None
+                # If on_failure has 'endpoint' directly (old format), it's legacy
+                elif 'endpoint' in on_failure_data:
+                    data['on_failure'] = None
+                # If action_type is not 'workflow', it's legacy
+                elif on_failure_data.get('action_type') != 'workflow':
+                    data['on_failure'] = None
+        return data
 
 
 # Workflow Template Schemas
