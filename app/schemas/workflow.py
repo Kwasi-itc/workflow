@@ -12,7 +12,6 @@ class ApiConfig(BaseModel):
     headers: Optional[List[str]] = Field(None, description="Array of header names as strings")
     query_params: Optional[List[str]] = Field(None, description="Array of query parameter names as strings")
     body: Optional[Union[List[str], None]] = Field(None, description="Array of body keys as strings (should be null for GET requests)")
-    timeout_seconds: Optional[int] = Field(30, description="Request timeout in seconds", ge=1, le=300)
     
     @model_validator(mode='after')
     def validate_body_for_method(self):
@@ -28,24 +27,11 @@ class OnFailureWorkflowTarget(BaseModel):
     workflow_name: Optional[str] = Field(None, description="Name of workflow (for reference)")
 
 
-class OnFailureApiCallTarget(BaseModel):
-    """Schema for api_call action_target in on_failure (supports all HTTP methods)."""
-    endpoint: str = Field(..., description="Full URL for the failure handler API call")
-    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = Field(..., description="HTTP method")
-    headers: Optional[List[str]] = Field(None, description="Array of header names as strings")
-    query_params: Optional[List[str]] = Field(None, description="Array of query parameter names as strings")
-    body: Optional[List[str]] = Field(None, description="Array of body keys as strings")
-    timeout_seconds: Optional[int] = Field(30, description="Request timeout in seconds", ge=1, le=300)
-
-
 class EndActionApiConfig(BaseModel):
     """Schema for API configuration in end actions (supports all HTTP methods)."""
     endpoint: str = Field(..., description="Full URL for the end action")
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = Field(..., description="HTTP method")
     headers: Optional[List[str]] = Field(None, description="Array of header names as strings")
-    query_params: Optional[List[str]] = Field(None, description="Array of query parameter names as strings")
-    body: Optional[List[str]] = Field(None, description="Array of body keys as strings")
-    timeout_seconds: Optional[int] = Field(30, description="Request timeout in seconds", ge=1, le=300)
 
 
 class EndActionWorkflowTarget(BaseModel):
@@ -55,27 +41,23 @@ class EndActionWorkflowTarget(BaseModel):
 
 
 class OnFailure(BaseModel):
-    """Schema for on_failure handler in workflow dependencies."""
-    action_type: Literal["workflow", "api_call"] = Field(..., description="Type of failure handler")
-    action_target: Union[OnFailureWorkflowTarget, OnFailureApiCallTarget] = Field(
+    """Schema for on_failure handler in workflow dependencies. Only workflows are allowed."""
+    action_type: Literal["workflow"] = Field(..., description="Type of failure handler (only 'workflow' is allowed)")
+    action_target: OnFailureWorkflowTarget = Field(
         ..., 
-        description="Configuration based on action_type"
+        description="Workflow target configuration"
     )
     
     @model_validator(mode='before')
     @classmethod
     def parse_action_target(cls, data: Any):
-        """Parse action_target based on action_type."""
+        """Parse action_target as workflow target."""
         if isinstance(data, dict):
-            action_type = data.get('action_type')
             action_target_data = data.get('action_target')
             
-            if action_type == "workflow" and isinstance(action_target_data, dict):
+            if isinstance(action_target_data, dict):
                 # Validate and parse as OnFailureWorkflowTarget
                 data['action_target'] = OnFailureWorkflowTarget.model_validate(action_target_data)
-            elif action_type == "api_call" and isinstance(action_target_data, dict):
-                # Validate and parse as OnFailureApiCallTarget
-                data['action_target'] = OnFailureApiCallTarget.model_validate(action_target_data)
         
         return data
 

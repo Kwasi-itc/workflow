@@ -1,0 +1,376 @@
+[
+  {
+    "name": "kyc_verification_workflow",
+    "description": "Comprehensive Know Your Customer (KYC) verification workflow that collects and validates essential identity information including full legal name, identification document type and number, residential address, contact phone number, and date of birth. This workflow ensures regulatory compliance and enables secure financial services access by verifying customer identity before account activation, payment processing, or loan approval. The collected information is submitted for review and processing, which typically takes 24-48 hours to complete.",
+    "category": "fintech",
+    "guidelines": "Warmly guide the user through KYC collection. Explain why each detail is required for compliance and reassure the user about data security. Confirm information before submitting.",
+    "state_schema": {
+      "address": {
+        "type": "string",
+        "required": true,
+        "description": "Your current residential address"
+      },
+      "id_type": {
+        "enum": [
+          "passport",
+          "national_id",
+          "drivers_license"
+        ],
+        "type": "string",
+        "required": true,
+        "description": "What type of identification document will you be using"
+      },
+      "full_name": {
+        "type": "string",
+        "required": true,
+        "description": "Your full legal name as it appears on your ID"
+      },
+      "id_number": {
+        "type": "string",
+        "required": true,
+        "description": "Your identification document number"
+      },
+      "phone_number": {
+        "type": "string",
+        "required": true,
+        "description": "Your contact phone number"
+      },
+      "date_of_birth": {
+        "type": "string",
+        "required": true,
+        "description": "Your date of birth (YYYY-MM-DD format)"
+      }
+    },
+    "workflow_dependencies": [],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/kyc/customers/refresh",
+      "method": "POST",
+      "headers": [
+        "Authorization"
+      ]
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Collects and submits KYC data for review (processing may take 24-48 hours)."
+    }
+  },
+  {
+    "name": "payment_processing_workflow",
+    "description": "Complete payment processing workflow that collects payment details and initiates the payment",
+    "category": "fintech",
+    "guidelines": "Guide the user through collecting all required payment details including account ID, beneficiary information, amount, currency, and optional payment method. Once all information is collected, initiate the payment. Be clear and helpful when collecting payment details.",
+    "state_schema": {
+      "accountId": {
+        "type": "string",
+        "required": true,
+        "description": "The unique identifier of the source account"
+      },
+      "customerId": {
+        "type": "string",
+        "required": true,
+        "description": "The unique identifier of the customer"
+      },
+      "beneficiary": {
+        "type": "string",
+        "required": true,
+        "description": "Name of the payment beneficiary"
+      },
+      "beneficiaryAccount": {
+        "type": "string",
+        "required": true,
+        "description": "Account number or identifier of the beneficiary"
+      },
+      "amount": {
+        "type": "number",
+        "minimum": 0.01,
+        "required": true,
+        "description": "Payment amount (must be greater than 0.01)"
+      },
+      "currency": {
+        "type": "string",
+        "enum": [
+          "GHS",
+          "USD",
+          "EUR",
+          "NGN"
+        ],
+        "required": true,
+        "description": "Currency code for the payment"
+      },
+      "method": {
+        "type": "string",
+        "description": "Payment method (bank_transfer, mobile_money, card) - defaults to bank_transfer"
+      }
+    },
+    "workflow_dependencies": [
+      {
+        "name": "account_active_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/accounts/check-active",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "account_creation_workflow_id",
+            "workflow_name": "account_creation",
+            "note": "Account must be fully opened and active before initiating this payment."
+          }
+        }
+      },
+      {
+        "name": "kyc_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/kyc/customers/check-approved",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_name": "kyc_verification_workflow",
+            "note": "KYC must be approved before proceeding with the payment."
+          }
+        }
+      },
+      {
+        "name": "limit_available_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/limits/check-available",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "payment_processing_workflow_id",
+            "workflow_name": "payment_processing_workflow",
+            "note": "Daily or monthly limits must allow the requested amount."
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/payments/initiate",
+      "method": "POST",
+      "headers": [
+        "Authorization"
+      ]
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Payment processing with full validation chain"
+    }
+  },
+  {
+    "name": "loan_application_workflow",
+    "description": "Complete loan application workflow that collects loan details and submits the application",
+    "category": "fintech",
+    "guidelines": "Guide the user through collecting all required loan application details including loan type, amount, purpose, income, employment status, and preferred term. Once all information is collected, submit the loan application. Be friendly and explain why each piece of information is needed.",
+    "state_schema": {
+      "customerId": {
+        "type": "string",
+        "required": true,
+        "description": "The unique identifier of the customer applying for the loan"
+      },
+      "accountId": {
+        "type": "string",
+        "required": true,
+        "description": "The unique identifier of the account associated with the loan"
+      },
+      "loan_type": {
+        "type": "string",
+        "enum": [
+          "personal",
+          "business"
+        ],
+        "required": true,
+        "description": "Type of loan (personal or business)"
+      },
+      "loan_amount": {
+        "type": "number",
+        "minimum": 1000,
+        "maximum": 1000000,
+        "required": true,
+        "description": "Loan amount in GH\u00e2\u201a\u00b5 (must be between 1,000 and 1,000,000)"
+      },
+      "loan_purpose": {
+        "type": "string",
+        "required": true,
+        "description": "Purpose or reason for the loan"
+      },
+      "annual_income": {
+        "type": "number",
+        "minimum": 0,
+        "required": true,
+        "description": "Annual income in GH\u00e2\u201a\u00b5 (must be >= 0)"
+      },
+      "employment_status": {
+        "type": "string",
+        "enum": [
+          "employed",
+          "self-employed",
+          "unemployed",
+          "retired"
+        ],
+        "required": true,
+        "description": "Employment status of the applicant"
+      },
+      "preferred_term_months": {
+        "type": "integer",
+        "minimum": 6,
+        "maximum": 360,
+        "required": true,
+        "description": "Preferred loan term in months (must be between 6 and 360)"
+      }
+    },
+    "workflow_dependencies": [
+      {
+        "name": "loan_eligible_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/loans/check-eligible",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "loan_application_workflow_id",
+            "workflow_name": "loan_application_workflow",
+            "note": "Loan eligibility must be confirmed before submitting the application."
+          }
+        }
+      },
+      {
+        "name": "kyc_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/kyc/customers/check-approved",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_name": "kyc_verification_workflow",
+            "note": "User KYC must be approved before submitting the loan application."
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/loans/apply",
+      "method": "POST",
+      "headers": [
+        "Authorization"
+      ]
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 10,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Loan application submission workflow"
+    }
+  },
+  {
+    "name": "account_creation",
+    "description": "Account creation workflow that collects account details and creates a new account",
+    "category": "fintech",
+    "guidelines": "Guide the user through collecting account creation details including account type (savings or current), currency, and optional initial deposit. Once all information is collected, create the account. Be friendly and explain the account options available.",
+    "state_schema": {
+      "customerId": {
+        "type": "string",
+        "required": true,
+        "description": "The unique identifier of the customer"
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "savings",
+          "current"
+        ],
+        "required": true,
+        "description": "Type of account to create (savings or current)"
+      },
+      "currency": {
+        "type": "string",
+        "required": true,
+        "description": "Currency code for the account (e.g., GHS, USD, EUR, NGN)"
+      },
+      "initialDeposit": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Initial deposit amount (defaults to 0 if not provided)"
+      }
+    },
+    "workflow_dependencies": [
+      {
+        "name": "kyc_approved_check",
+        "api": {
+          "endpoint": "https://mydummyapi.onrender.com/kyc/customers/check-approved",
+          "method": "GET",
+          "headers": [
+            "Authorization"
+          ],
+          "query_params": [],
+          "body": null
+        },
+        "on_failure": {
+          "action_type": "workflow",
+          "action_target": {
+            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_name": "kyc_verification_workflow",
+            "note": "KYC must be approved before the account can be activated."
+          }
+        }
+      }
+    ],
+    "end_action_type": "api_call",
+    "end_action_target": {
+      "endpoint": "https://mydummyapi.onrender.com/accounts",
+      "method": "POST",
+      "headers": [
+        "Authorization"
+      ]
+    },
+    "is_active": true,
+    "workflow_metadata": {
+      "version": "1.0",
+      "estimated_duration_minutes": 5,
+      "api_base_url": "https://mydummyapi.onrender.com",
+      "note": "Account creation workflow"
+    }
+  }
+]
