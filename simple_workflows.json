@@ -3,7 +3,7 @@
     "name": "kyc_verification_workflow",
     "description": "Comprehensive Know Your Customer (KYC) verification workflow that collects and validates essential identity information including full legal name, identification document type and number, residential address, contact phone number, and date of birth. This workflow ensures regulatory compliance and enables secure financial services access by verifying customer identity before account activation, payment processing, or loan approval. The collected information is submitted for review and processing, which typically takes 24-48 hours to complete.",
     "category": "fintech",
-    "guidelines": "Warmly guide the user through KYC collection. Explain why each detail is required for compliance and reassure the user about data security. Confirm information before submitting.",
+    "guidelines": "Use a warm, reassuring, and professional tone. Collect information one field at a time, allowing the user to provide each detail at their own pace. Explain why each piece of information is required for compliance purposes. Reassure the user about data security and confidentiality. Be patient and supportive, especially if the user seems hesitant. ",
     "state_schema": {
       "address": {
         "type": "string",
@@ -62,7 +62,7 @@
     "name": "payment_processing_workflow",
     "description": "Complete payment processing workflow that collects payment details and initiates the payment",
     "category": "fintech",
-    "guidelines": "Guide the user through collecting all required payment details including account ID, beneficiary information, amount, currency, and optional payment method. Once all information is collected, initiate the payment. Be clear and helpful when collecting payment details.",
+    "guidelines": "Use a clear, efficient, and professional tone. Collect payment details in a logical sequence: start with amount and currency, then beneficiary information, and finally payment method. Move at a steady pace - not too rushed, but also not overly slow since payments are time-sensitive. Double-check critical details like amount and beneficiary account before proceeding. Be concise but thorough when explaining each field.",
     "state_schema": {
       "accountId": {
         "type": "string",
@@ -121,7 +121,7 @@
         "on_failure": {
           "action_type": "workflow",
           "action_target": {
-            "workflow_id": "account_creation_workflow_id",
+            "workflow_id": "d658f1a2-6a89-4ccc-b7f1-e28d8ac3340c",
             "workflow_name": "account_creation",
             "note": "Account must be fully opened and active before initiating this payment."
           }
@@ -141,29 +141,9 @@
         "on_failure": {
           "action_type": "workflow",
           "action_target": {
-            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_id": "2d06a603-c128-4ca6-8d1a-0c6670e9730a",
             "workflow_name": "kyc_verification_workflow",
             "note": "KYC must be approved before proceeding with the payment."
-          }
-        }
-      },
-      {
-        "name": "limit_available_check",
-        "api": {
-          "endpoint": "https://mydummyapi.onrender.com/limits/check-available",
-          "method": "GET",
-          "headers": [
-            "Authorization"
-          ],
-          "query_params": [],
-          "body": null
-        },
-        "on_failure": {
-          "action_type": "workflow",
-          "action_target": {
-            "workflow_id": "payment_processing_workflow_id",
-            "workflow_name": "payment_processing_workflow",
-            "note": "Daily or monthly limits must allow the requested amount."
           }
         }
       }
@@ -188,7 +168,7 @@
     "name": "loan_application_workflow",
     "description": "Complete loan application workflow that collects loan details and submits the application",
     "category": "fintech",
-    "guidelines": "Guide the user through collecting all required loan application details including loan type, amount, purpose, income, employment status, and preferred term. Once all information is collected, submit the loan application. Be friendly and explain why each piece of information is needed.",
+    "guidelines": "Use a supportive, encouraging, and professional tone. Collect information in a structured manner: start with loan type and amount, then purpose, followed by financial details (income, employment), and finally loan terms. Take your time with sensitive financial information - allow the user to feel comfortable sharing. Explain how each piece of information helps assess their loan application. Be empathetic and understanding, as loan applications can be stressful for users.",
     "state_schema": {
       "customerId": {
         "type": "string",
@@ -261,9 +241,9 @@
         "on_failure": {
           "action_type": "workflow",
           "action_target": {
-            "workflow_id": "loan_application_workflow_id",
-            "workflow_name": "loan_application_workflow",
-            "note": "Loan eligibility must be confirmed before submitting the application."
+            "workflow_id": "d658f1a2-6a89-4ccc-b7f1-e28d8ac3340c",
+            "workflow_name": "account_creation",
+            "note": "An active account may be required before loan eligibility can be determined."
           }
         }
       },
@@ -281,7 +261,7 @@
         "on_failure": {
           "action_type": "workflow",
           "action_target": {
-            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_id": "2d06a603-c128-4ca6-8d1a-0c6670e9730a",
             "workflow_name": "kyc_verification_workflow",
             "note": "User KYC must be approved before submitting the loan application."
           }
@@ -308,7 +288,7 @@
     "name": "account_creation",
     "description": "Account creation workflow that collects account details and creates a new account",
     "category": "fintech",
-    "guidelines": "Guide the user through collecting account creation details including account type (savings or current), currency, and optional initial deposit. Once all information is collected, create the account. Be friendly and explain the account options available.",
+    "guidelines": "Use a welcoming, friendly, and helpful tone. Collect information at a comfortable pace, one field at a time. Start with account type and explain the differences between savings and current accounts clearly. Then collect currency preference and initial deposit amount. Be enthusiastic about helping them open their new account. Provide clear explanations of account features and benefits as you collect each detail.",
     "state_schema": {
       "customerId": {
         "type": "string",
@@ -350,7 +330,7 @@
         "on_failure": {
           "action_type": "workflow",
           "action_target": {
-            "workflow_id": "kyc_verification_workflow_id",
+            "workflow_id": "2d06a603-c128-4ca6-8d1a-0c6670e9730a",
             "workflow_name": "kyc_verification_workflow",
             "note": "KYC must be approved before the account can be activated."
           }

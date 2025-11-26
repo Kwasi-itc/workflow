@@ -74,9 +74,6 @@ class Workflow(Base):
     status = Column(String(50), nullable=False, default='active', index=True)
     state_data = Column(JSON, nullable=False, default=dict)
     
-    # Dependency Tracking
-    pending_dependencies = Column(JSON, nullable=True, default=dict)  # {workflow: [workflow_ids], external: [external_deps]}
-    
     # Execution Tracking
     started_at = Column(DateTime, server_default=func.now(), nullable=False)
     completed_at = Column(DateTime, nullable=True)

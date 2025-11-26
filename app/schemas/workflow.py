@@ -232,18 +232,21 @@ class WorkflowUpdate(BaseModel):
     workflow_metadata: Optional[Dict[str, Any]] = None
 
 
-class WorkflowResponse(WorkflowBase):
+class WorkflowResponse(BaseModel):
     """Schema for workflow instance response."""
     id: UUID
+    template_id: UUID
+    conversation_id: UUID
+    user_id: str
     status: str
-    pending_dependencies: Optional[Dict[str, Any]] = None
+    state_data: Dict[str, Any] = Field(default_factory=dict)
     started_at: datetime
     completed_at: Optional[datetime] = None
     last_interaction_at: datetime
     end_action_result: Optional[Dict[str, Any]] = None
+    workflow_metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
-    template: Optional[WorkflowTemplateResponse] = None
 
     class Config:
         from_attributes = True
